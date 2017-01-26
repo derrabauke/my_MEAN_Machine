@@ -55,7 +55,7 @@ apiRouter.get('/', function(req, res){
     res.json({message: 'hooray! Welcome to our API!' + Math.floor(Date.now() /1000)});
 });
 
-
+// user modifcation routes
 apiRouter.route('/users')
     // create a user ( acces at POST @ localhost:8080/api/users )
     .post(function(req, res) {
@@ -135,12 +135,6 @@ apiRouter.route('/users/:user_id')
             res.json({ message: 'Successfully deleted' });
         });
     });
-
-
-
-
-
-
 // ==> ENTER MORE ROUTES HERE
 // ...
 
