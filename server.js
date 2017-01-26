@@ -13,7 +13,7 @@ var port        = process.env.PORT || 8080; // set the port for our app
 mongoose.connect('mongodb://localhost:27017/mean_crm_db');
 
 // App config
-// body-parser will grab information from POST requests
+// body-parser will grab information from HTTP requests
 app.use(bodyParser.urlencoded({ extended: true}));
 app.use(bodyParser.json());
 
@@ -57,6 +57,7 @@ apiRouter.get('/', function(req, res){
 
 
 apiRouter.route('/users')
+    // create a user ( acces at POST @ localhost:8080/api/users )
     .post(function(req, res) {
         // create a new instance of the User model
         var user = new User();
@@ -81,7 +82,65 @@ apiRouter.route('/users')
             }
             res.json({ message: 'User created!' });
         });
+    })
+    // get all the users ( GET @ localhost:8080/api/users )
+    .get(function(req, res) {
+        User.find(function(err, users){
+            if (err) { res.send(err); }
+
+            // return the users
+            res.json(users);
+        });
     });
+apiRouter.route('/users/:user_id')
+    // get the user with that id
+    // (accessed with GET @ localhost:8080/api/users/:user_id)
+    .get(function(req, res) {
+        User.findById(req.params.user_id, function(err, user){
+            if (err) res.send(err);
+
+            //return that user
+            res.json(user);
+        })
+    })
+
+    // update the specific user
+    .put(function(req, res){
+        // use our user model to find the user he want
+        User.findById(req.params.user_id, function(err, user){
+            if (err) res.send(err);
+
+            //update the users info only if its new
+            if (req.body.name ) user.name = req.body.name;
+            if (req.body.username) user.username = req.body.username;
+            if (req.body.password) user.password = req.body.password;
+
+            // save the user
+            user.save(function(err){
+                if (err) res.send(err);
+
+                //return a message
+                res.json({ message: 'User updated!'});
+            });
+        });
+    })
+
+    // delete the specific user
+    .delete(function(req, res){
+        User.remove({
+            _id: req.params.user_id
+        }, function(err, user){
+            if (err) return res.send(err);
+
+            res.json({ message: 'Successfully deleted' });
+        });
+    });
+
+
+
+
+
+
 // ==> ENTER MORE ROUTES HERE
 // ...
 
