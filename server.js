@@ -6,8 +6,10 @@ var app         = express(); // define our app unsing express
 var bodyParser  = require('body-parser');
 var morgan      = require('morgan');
 var mongoose    = require('mongoose');
+var jwt         = require('jsonwebtoken');
 var User        = require('./app/models/user.js');
 var port        = process.env.PORT || 8080; // set the port for our app
+var superSecret = "evilknivelsupersecret";
 
 // connect to our database
 mongoose.connect('mongodb://localhost:27017/mean_crm_db');
@@ -17,7 +19,7 @@ mongoose.connect('mongodb://localhost:27017/mean_crm_db');
 app.use(bodyParser.urlencoded({ extended: true}));
 app.use(bodyParser.json());
 
-// config our app to handle CORs ( Cross Origin Request )
+// config our app to handle CORS ( Cross Origin Resource Sharing )
 app.use(function(req, res, next) {
     res.setHeader('Acces-Control-Allow-Origin', '*');
     res.setHeader('Acces-Control-Allow-Methods', 'GET, POST');
@@ -39,12 +41,55 @@ app.get('/', function(req, res){
 // get an instance of the express router
 var apiRouter = express.Router();
 
+// authenti8 ant (POST http://localhost:8080/api/authenticate)
+apiRouter.post('/authenticate', function(req, res){
+    // find the user
+    User.findOne({
+        username: req.body.username
+    }).select('name username password').exec(function(err, user){
+        // errorhandling
+        if (err) throw err;
+
+        // no user with that username was found
+        if (!user){
+            res.json({
+                success: false,
+                message: 'Authentification failed. User not found.',
+            });
+        } else if (user){
+            // check if password matches with hshd one
+            var validPassword = user.comparePassword(req.body.password);
+
+            if (!validPassword){
+                res.json({
+                    success: false,
+                    message: 'Authentification failed. Wrong password.'
+                })
+            } else {
+                // if user and password is ok
+                // create token
+                var token = jwt.sign({
+                    name: user.name,
+                    username: user.username
+                }, superSecret, {
+                    expiresIn: '24h' // expires in 24h
+                });
+                
+                // return the information including token as json
+                res.json({
+                    success: true,
+                    message: 'Enjoy your token!',
+                    token: token
+                });
+            }
+        }
+    });
+});
+
 // middleware to use for all requests
 apiRouter.use(function(req, res, next){
     // do logging
     console.log('Somebody just came to this app!');
-    // later on I will add authentification at this point,
-    // so just auth. users are able to go on from this point on
     // if I don´t call "next();" the app will stop at this point
     next();
 })
